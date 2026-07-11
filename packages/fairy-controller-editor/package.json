@@ -1,0 +1,14 @@
+{
+  "name": "fairy-controller-editor",
+  "version": "0.0.1",
+  "description": "Fairy style controller editor for Cocos Creator 2.4.15",
+  "author": "OpenAI",
+  "main": "main.js",
+  "panel": {
+    "main": "panel/index.js",
+    "type": "dockable",
+    "title": "Fairy Controller",
+    "width": 760,
+    "height": 620
+  }
+}
