@@ -21,17 +21,14 @@ export default class HelloWorld extends cc.Component {
     }
 
     onBtn1Click() {
-        this.node.getComponent(UIController).setIndex("controller", 0);
+        this.node.getComponent(UIController).setIndex("c1", 0);
     }
 
     onBtn2Click() {
-        this.node.getComponent(UIController).setIndex("controller", 1);
+        this.node.getComponent(UIController).setIndex("c1", 1);
     }
 
     onDestroy() {
-        if (this.controller) {
-            this.controller.node.off('controller-preview-changed', this._refreshLabel, this);
-        }
         this.node.off(cc.Node.EventType.TOUCH_END, this._switchPage, this);
     }
 

@@ -184,7 +184,7 @@ const INJECT_SCRIPT = `
       rootNodeUuid: node ? (node.uuid || node._id || '') : '',
       rootNodeName: node ? (node.name || '') : '',
       prefabAssetUuid: prefabAsset ? (prefabAsset._uuid || prefabAsset.uuid || '') : '',
-      prefabAssetUrl: prefabAsset ? (prefabAsset.nativeUrl || prefabAsset.url || '') : '',
+      prefabAssetUrl: prefabAsset ? (prefabAsset.nativeUrl || '') : '',
     };
   }
 
@@ -4573,7 +4573,7 @@ function querySelectionPersistenceInfo() {
         rootNodeUuid: node ? (node.uuid || node._id || '') : '',
         rootNodeName: node ? (node.name || '') : '',
         prefabAssetUuid: prefabAsset ? (prefabAsset._uuid || prefabAsset.uuid || '') : '',
-        prefabAssetUrl: prefabAsset ? (prefabAsset.nativeUrl || prefabAsset.url || '') : '',
+        prefabAssetUrl: prefabAsset ? (prefabAsset.nativeUrl || '') : '',
       };
     })();
   `;
