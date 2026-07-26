@@ -19,6 +19,7 @@ const UI_CONTROLLER_GEAR_COLOR_UUID = compressScriptUuid('6f6ecf4f-9b92-4eef-a63
 const UI_CONTROLLER_GEAR_POSITION_UUID = compressScriptUuid('14c0e2d1-9914-4cf7-a88f-36ab5041f0fe', '14c0LSZZFM96iPNqtQQfD+');
 const UI_CONTROLLER_GEAR_SIZE_UUID = compressScriptUuid('106d1320-a4b5-4b32-8416-7f1987d82994', '106d1320-a4b5-4b32-8416-7f1987d82994');
 const UI_CONTROLLER_GEAR_FONT_SIZE_UUID = compressScriptUuid('c188892f-41da-4deb-8d87-6ce79973d268', 'c188892f-41da-4deb-8d87-6ce79973d268');
+const UI_CONTROLLER_GEAR_IMAGE_UUID = compressScriptUuid('d0347548-154f-4521-91ec-9641795c8909', 'd0347548-154f-4521-91ec-9641795c8909');
 const UI_CONTROLLER_DATA_UUID = '30c0b2wH0JKO5/8O8t27Yj7';
 const LEGACY_UI_CONTROLLER_DATA_UUIDS = [
   '30c0bdb0-1f42-4a3b-9ffc-3bcb76ed88fb',
@@ -916,6 +917,10 @@ const INJECT_SCRIPT = `
     return node ? node.getComponent('UIControllerGearFontSize') : null;
   }
 
+  function getPropertyImageGear(node) {
+    return node ? node.getComponent('UIControllerGearImage') : null;
+  }
+
   function getTextStateClass() {
     if (!window.cc || !cc.js || !cc.js.getClassByName) {
       return null;
@@ -1037,6 +1042,22 @@ const INJECT_SCRIPT = `
     return state;
   }
 
+  function getImageStateClass() {
+    if (!window.cc || !cc.js || !cc.js.getClassByName) {
+      return null;
+    }
+
+    return cc.js.getClassByName('UIControllerImageState');
+  }
+
+  function createImageState(page, spriteFrame) {
+    var StateClass = getImageStateClass();
+    var state = StateClass ? new StateClass() : {};
+    state.page = page || '';
+    state.spriteFrame = spriteFrame || null;
+    return state;
+  }
+
   function getColorStateForPage(gear, pageRef) {
     if (!gear || !Array.isArray(gear.states) || !pageRef) {
       return null;
@@ -1083,6 +1104,21 @@ const INJECT_SCRIPT = `
   }
 
   function getFontSizeStateForPage(gear, pageRef) {
+    if (!gear || !Array.isArray(gear.states) || !pageRef) {
+      return null;
+    }
+
+    for (var i = 0; i < gear.states.length; i++) {
+      var state = gear.states[i];
+      if (state && state.page === pageRef) {
+        return state;
+      }
+    }
+
+    return null;
+  }
+
+  function getImageStateForPage(gear, pageRef) {
     if (!gear || !Array.isArray(gear.states) || !pageRef) {
       return null;
     }
@@ -1241,6 +1277,29 @@ const INJECT_SCRIPT = `
 
     window.__fairyControllerFontSizeSelectionState = window.__fairyControllerFontSizeSelectionState || {};
     window.__fairyControllerFontSizeSelectionState[key] = {
+      controllerName: controllerName || '',
+      pageName: pageName || '',
+    };
+  }
+
+  function getImageSelectionState(node) {
+    var key = getNodeStateKey(node);
+    if (!key) {
+      return null;
+    }
+
+    var store = window.__fairyControllerImageSelectionState || {};
+    return store[key] || null;
+  }
+
+  function setImageSelectionState(node, controllerName, pageName) {
+    var key = getNodeStateKey(node);
+    if (!key) {
+      return;
+    }
+
+    window.__fairyControllerImageSelectionState = window.__fairyControllerImageSelectionState || {};
+    window.__fairyControllerImageSelectionState[key] = {
       controllerName: controllerName || '',
       pageName: pageName || '',
     };
@@ -1412,6 +1471,50 @@ const INJECT_SCRIPT = `
         || selectionState.pageName !== pageName
       ) {
         setFontSizeSelectionState(node, controllerName, pageName);
+      }
+      selectionState = {
+        controllerName: controllerName,
+        pageName: pageName,
+      };
+    }
+
+    return selectionState;
+  }
+
+  function getEffectiveImageSelectionState(node, gear) {
+    var selectionState = getImageSelectionState(node);
+    var nextGear = gear || getPropertyImageGear(node);
+    if (!selectionState && !nextGear) {
+      return selectionState;
+    }
+
+    var selectionControllerName = selectionState && selectionState.controllerName
+      ? selectionState.controllerName
+      : '';
+    var controllerName = hasControllerName(selectionControllerName)
+      ? selectionControllerName
+      : ((nextGear && nextGear.controllerName) || '');
+    var fallbackPageName = selectionState && selectionState.pageName
+      ? selectionState.pageName
+      : '';
+    if (!fallbackPageName && nextGear && Array.isArray(nextGear.states) && nextGear.states.length) {
+      for (var i = 0; i < nextGear.states.length; i++) {
+        if (nextGear.states[i] && nextGear.states[i].page) {
+          fallbackPageName = nextGear.states[i].page;
+          break;
+        }
+      }
+    }
+
+    var pageName = getResolvedTextPageName(controllerName, fallbackPageName);
+
+    if (controllerName && pageName) {
+      if (
+        !selectionState
+        || selectionState.controllerName !== controllerName
+        || selectionState.pageName !== pageName
+      ) {
+        setImageSelectionState(node, controllerName, pageName);
       }
       selectionState = {
         controllerName: controllerName,
@@ -1648,6 +1751,62 @@ const INJECT_SCRIPT = `
 
     if (!matched) {
       states.push(createFontSizeState(selectionState.pageName, currentValue));
+      gear.states = states;
+    }
+  }
+
+  function syncImageGearStateFromNode(node) {
+    if (!node) {
+      return;
+    }
+
+    var gear = getPropertyImageGear(node);
+    var sprite = node.getComponent(cc.Sprite);
+    var selectionState = getEffectiveImageSelectionState(node, gear);
+    if (!gear || !sprite || !selectionState || !selectionState.controllerName || !selectionState.pageName) {
+      return;
+    }
+
+    var rootController = getRootControllerComponent(false);
+    if (rootController) {
+      var activeControllerName = rootController.getActiveControllerName
+        ? (rootController.getActiveControllerName() || '')
+        : (rootController.previewController || '');
+      var activePageId = rootController.getActivePageId
+        ? (rootController.getActivePageId() || '')
+        : '';
+      var activePageName = rootController.getActivePageName
+        ? (rootController.getActivePageName() || '')
+        : (rootController.previewPage || '');
+
+      if (
+        activeControllerName !== selectionState.controllerName
+        || (
+          selectionState.pageName !== activePageId
+          && selectionState.pageName !== activePageName
+        )
+      ) {
+        return;
+      }
+    }
+
+    gear.controllerName = selectionState.controllerName || '';
+    var states = Array.isArray(gear.states) ? gear.states.slice() : [];
+    var currentValue = sprite.spriteFrame || null;
+    var matched = false;
+    for (var i = 0; i < states.length; i++) {
+      if (states[i] && states[i].page === selectionState.pageName) {
+        if ((states[i].spriteFrame || null) !== currentValue) {
+          states[i].spriteFrame = currentValue;
+          gear.states = states;
+        }
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      states.push(createImageState(selectionState.pageName, currentValue));
       gear.states = states;
     }
   }
@@ -1955,6 +2114,83 @@ const INJECT_SCRIPT = `
     gear.states = currentStates;
   }
 
+  function saveImageForSelection(node, selectionState) {
+    if (!node || !selectionState || !selectionState.controllerName || !selectionState.pageName) {
+      return;
+    }
+
+    var gear = getPropertyImageGear(node);
+    var sprite = node.getComponent(cc.Sprite);
+    if (!gear || !sprite) {
+      return;
+    }
+
+    gear.controllerName = selectionState.controllerName || '';
+    var states = Array.isArray(gear.states) ? gear.states.slice() : [];
+    var currentValue = sprite.spriteFrame || null;
+    var matched = false;
+    for (var i = 0; i < states.length; i++) {
+      if (states[i] && states[i].page === selectionState.pageName) {
+        states[i].spriteFrame = currentValue;
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      states.push(createImageState(selectionState.pageName, currentValue));
+    }
+
+    gear.states = states;
+  }
+
+  function initializeImageGearStates(node, controllerName) {
+    if (!node || !controllerName) {
+      return;
+    }
+
+    var gear = getPropertyImageGear(node);
+    var sprite = node.getComponent(cc.Sprite);
+    if (!gear || !sprite) {
+      return;
+    }
+
+    var controllers = window.__fairyControllerToolbarState.controllers || [];
+    var pages = [];
+    for (var i = 0; i < controllers.length; i++) {
+      if (controllers[i] && controllers[i].name === controllerName) {
+        pages = Array.isArray(controllers[i].pages) ? controllers[i].pages : [];
+        break;
+      }
+    }
+
+    var currentStates = Array.isArray(gear.states) ? gear.states.slice() : [];
+    var nextStates = [];
+    var currentSpriteFrame = sprite.spriteFrame || null;
+    for (var j = 0; j < pages.length; j++) {
+      var pageRef = getPageOptionValue(pages[j], j);
+      var existing = getImageStateForPage(gear, pageRef);
+      nextStates.push(createImageState(
+        pageRef,
+        existing ? (existing.spriteFrame || null) : currentSpriteFrame
+      ));
+    }
+
+    gear.controllerName = controllerName || '';
+    if (!gear.targetSprite) {
+      gear.targetSprite = sprite;
+    }
+    if (!gear.defaultSpriteFrame) {
+      gear.defaultSpriteFrame = currentSpriteFrame;
+    }
+    if (pages.length) {
+      gear.states = nextStates;
+      return;
+    }
+
+    gear.states = currentStates;
+  }
+
   function getPageOptionValue(page, index) {
     if (!page) {
       return '';
@@ -2199,6 +2435,7 @@ const INJECT_SCRIPT = `
     syncColorGearStateFromNode(selectedNode);
     syncSizeGearStateFromNode(selectedNode);
     syncFontSizeGearStateFromNode(selectedNode);
+    syncImageGearStateFromNode(selectedNode);
     var rootComponent = getRootControllerComponent(false);
     var rootNode = rootComponent ? rootComponent.node : null;
     var binding = getDisplayBinding(rootComponent, rootNode, selectedNode);
@@ -2388,6 +2625,24 @@ const INJECT_SCRIPT = `
     return gear || null;
   }
 
+  function ensureImageGear(node) {
+    if (!node) {
+      return null;
+    }
+
+    var gear = getPropertyImageGear(node);
+    var sprite = node.getComponent(cc.Sprite);
+    if (!gear) {
+      gear = node.addComponent('UIControllerGearImage');
+      if (gear) {
+        gear.controllerName = '';
+        gear.targetSprite = sprite || null;
+        gear.defaultSpriteFrame = sprite ? (sprite.spriteFrame || null) : null;
+      }
+    }
+    return gear || null;
+  }
+
   function removeTextGear(node) {
     if (!node) {
       return false;
@@ -2442,6 +2697,22 @@ const INJECT_SCRIPT = `
     }
 
     var gear = getPropertyFontSizeGear(node);
+    if (!gear) {
+      return false;
+    }
+
+    if (gear.destroy) {
+      gear.destroy();
+    }
+    return true;
+  }
+
+  function removeImageGear(node) {
+    if (!node) {
+      return false;
+    }
+
+    var gear = getPropertyImageGear(node);
     if (!gear) {
       return false;
     }
@@ -2571,6 +2842,24 @@ const INJECT_SCRIPT = `
       return;
     }
 
+    if (type === 'image') {
+      if (!node.getComponent(cc.Sprite)) {
+        console.warn('[fairy-controller-editor][property-control][more-control] 图片控制需要节点上有 Sprite 组件');
+        return;
+      }
+      var newImageGear = ensureImageGear(node);
+      if (newImageGear) {
+        var currentImageSelection = getImageSelectionState(node);
+        var defaultImageControllerName = currentImageSelection && currentImageSelection.controllerName
+          ? currentImageSelection.controllerName
+          : ((window.__fairyControllerToolbarState.controllers || [])[0] && (window.__fairyControllerToolbarState.controllers || [])[0].name || '');
+        initializeImageGearStates(node, defaultImageControllerName);
+      }
+      console.log('[fairy-controller-editor][property-control][more-control] added UIControllerGearImage');
+      renderPropertyControl();
+      return;
+    }
+
     if (type === 'color') {
       var newColorGear = ensureColorGear(node);
       if (newColorGear) {
@@ -2632,13 +2921,18 @@ const INJECT_SCRIPT = `
       { label: '颜色', type: 'color' },
       { label: '外观(透明度/旋转/变灰/不可触摸)', type: 'look' },
       { label: '文本', type: 'text' },
-      { label: '图标', type: 'icon' },
+      { label: '图片', type: 'image' },
     ];
 
     var selectedNode = getSelectedNode();
     if (!hasTextComponent(selectedNode)) {
       items = items.filter(function (item) {
         return item.type !== 'text' && item.type !== 'font-size';
+      });
+    }
+    if (!selectedNode || !selectedNode.getComponent(cc.Sprite)) {
+      items = items.filter(function (item) {
+        return item.type !== 'image';
       });
     }
 
@@ -2841,6 +3135,46 @@ const INJECT_SCRIPT = `
     }
   }
 
+  function applyImagePropertyGear(controllerName, pageName) {
+    var node = getSelectedNode();
+    if (!node) {
+      return;
+    }
+
+    var gear = ensureImageGear(node);
+    var sprite = node.getComponent(cc.Sprite);
+    if (!gear || !sprite) {
+      return;
+    }
+
+    setImageSelectionState(node, controllerName || '', pageName || '');
+    gear.controllerName = controllerName || '';
+
+    if (!gear.targetSprite) {
+      gear.targetSprite = sprite;
+    }
+    if (!gear.defaultSpriteFrame) {
+      gear.defaultSpriteFrame = sprite.spriteFrame || null;
+    }
+
+    var rootController = getRootControllerComponent(false);
+    if (rootController) {
+      if (rootController.setPreview) {
+        rootController.setPreview(controllerName || '', pageName || '');
+      }
+      else {
+        rootController.previewController = controllerName || '';
+        rootController.previewPage = pageName || '';
+        if (rootController.applyAll) {
+          rootController.applyAll();
+        }
+      }
+    }
+    if (gear.apply) {
+      gear.apply();
+    }
+  }
+
   function renderPropertyControl() {
     var root = ensurePropertyControlRoot();
     var insertTarget = findInspectorInsertTarget();
@@ -2886,6 +3220,8 @@ const INJECT_SCRIPT = `
     var sizeSelectionState = getEffectiveSizeSelectionState(selectedNode, sizeGear);
     var fontSizeGear = getPropertyFontSizeGear(selectedNode);
     var fontSizeSelectionState = getEffectiveFontSizeSelectionState(selectedNode, fontSizeGear);
+    var imageGear = getPropertyImageGear(selectedNode);
+    var imageSelectionState = getEffectiveImageSelectionState(selectedNode, imageGear);
     var label = selectedNode ? selectedNode.getComponent(cc.Label) : null;
     var controllerName = selectionState
       ? (selectionState.controllerName || '')
@@ -2974,6 +3310,21 @@ const INJECT_SCRIPT = `
       fontSizeControllerName,
       fontSizeSelectionState ? (fontSizeSelectionState.pageName || '') : ''
     );
+    var imageControllerName = imageSelectionState
+      ? (imageSelectionState.controllerName || '')
+      : (imageGear ? (imageGear.controllerName || '') : '');
+    var imageController = null;
+    for (var imageIndex = 0; imageIndex < controllers.length; imageIndex++) {
+      if (controllers[imageIndex] && controllers[imageIndex].name === imageControllerName) {
+        imageController = controllers[imageIndex];
+        break;
+      }
+    }
+
+    var imagePageName = getResolvedTextPageName(
+      imageControllerName,
+      imageSelectionState ? (imageSelectionState.pageName || '') : ''
+    );
 
     if (
       textGear
@@ -3043,6 +3394,23 @@ const INJECT_SCRIPT = `
       };
     }
 
+    if (
+      imageGear
+      && imageControllerName
+      && imagePageName
+      && (
+        !imageSelectionState
+        || imageSelectionState.controllerName !== imageControllerName
+        || imageSelectionState.pageName !== imagePageName
+      )
+    ) {
+      setImageSelectionState(selectedNode, imageControllerName, imagePageName);
+      imageSelectionState = {
+        controllerName: imageControllerName,
+        pageName: imagePageName,
+      };
+    }
+
     logPropertyControl('render-state', {
       nodeName: selectedNode ? (selectedNode.name || '') : '',
       nodeKey: getNodeStateKey(selectedNode),
@@ -3104,6 +3472,22 @@ const INJECT_SCRIPT = `
             return {
               page: state && state.page ? state.page : '',
               value: state && typeof state.value === 'number' ? state.value : 0,
+            };
+          })
+          : [],
+      } : null,
+      imageGear: imageGear ? {
+        controllerName: imageGear.controllerName || '',
+        defaultSpriteFrame: imageGear.defaultSpriteFrame
+          ? (imageGear.defaultSpriteFrame.name || imageGear.defaultSpriteFrame._uuid || '')
+          : '',
+        states: Array.isArray(imageGear.states)
+          ? imageGear.states.map(function (state) {
+            return {
+              page: state && state.page ? state.page : '',
+              spriteFrame: state && state.spriteFrame
+                ? (state.spriteFrame.name || state.spriteFrame._uuid || '')
+                : '',
             };
           })
           : [],
@@ -3710,6 +4094,82 @@ const INJECT_SCRIPT = `
       fontSizeControllerSelect.addEventListener('input', handleFontSizeControllerChange);
 
       body.appendChild(fontSizeBlock);
+    }
+
+    if (imageGear) {
+      var imageBlock = document.createElement('div');
+      imageBlock.style.marginTop = '12px';
+
+      var imageRow = document.createElement('div');
+      imageRow.style.display = 'flex';
+      imageRow.style.alignItems = 'center';
+      imageRow.style.gap = '8px';
+      imageRow.style.marginBottom = '8px';
+
+      var imageIcon = document.createElement('span');
+      imageIcon.textContent = '图片';
+      imageIcon.style.color = '#bdbdbd';
+      imageIcon.style.fontSize = '14px';
+      imageRow.appendChild(imageIcon);
+
+      var imageControllerSelect = document.createElement('select');
+      imageControllerSelect.style.flex = '1';
+      imageControllerSelect.style.height = '28px';
+      imageControllerSelect.style.background = '#474747';
+      imageControllerSelect.style.color = '#d3d3d3';
+      imageControllerSelect.style.border = '1px solid #5a5a5a';
+
+      var imageEmptyControllerOption = document.createElement('option');
+      imageEmptyControllerOption.value = '';
+      imageEmptyControllerOption.textContent = '无';
+      imageControllerSelect.appendChild(imageEmptyControllerOption);
+
+      for (var c6 = 0; c6 < controllers.length; c6++) {
+        var imageControllerOption = document.createElement('option');
+        imageControllerOption.value = controllers[c6].name || '';
+        imageControllerOption.textContent = controllers[c6].name || '';
+        imageControllerSelect.appendChild(imageControllerOption);
+      }
+      imageControllerSelect.value = imageControllerName || '';
+      imageRow.appendChild(imageControllerSelect);
+
+      var removeImageButton = createActionButton('X');
+      removeImageButton.style.flex = '0 0 auto';
+      removeImageButton.addEventListener('click', function () {
+        if (removeImageGear(selectedNode)) {
+          setImageSelectionState(selectedNode, '', '');
+          renderPropertyControl();
+        }
+      });
+      imageRow.appendChild(removeImageButton);
+
+      imageBlock.appendChild(imageRow);
+
+      function handleImageControllerChange() {
+        saveImageForSelection(selectedNode, getEffectiveImageSelectionState(selectedNode, imageGear));
+        var nextControllerName = imageControllerSelect.value || '';
+        var nextController = null;
+        for (var i = 0; i < controllers.length; i++) {
+          if (controllers[i] && controllers[i].name === nextControllerName) {
+            nextController = controllers[i];
+            break;
+          }
+        }
+
+        var nextPageName = '';
+        if (nextController && nextController.pages && nextController.pages.length) {
+          nextPageName = getResolvedTextPageName(nextControllerName, getPageOptionValue(nextController.pages[0], 0));
+        }
+        initializeImageGearStates(selectedNode, nextControllerName);
+        setImageSelectionState(selectedNode, nextControllerName, nextPageName);
+        applyImagePropertyGear(nextControllerName, nextPageName);
+        renderPropertyControl();
+      }
+
+      imageControllerSelect.addEventListener('change', handleImageControllerChange);
+      imageControllerSelect.addEventListener('input', handleImageControllerChange);
+
+      body.appendChild(imageBlock);
     }
 
     actions.style.marginTop = '10px';
@@ -4528,6 +4988,7 @@ function renameControllerReferencesInSerializedData(data, originalName, nextName
       || entry.__type__ === UI_CONTROLLER_GEAR_POSITION_UUID
       || entry.__type__ === UI_CONTROLLER_GEAR_SIZE_UUID
       || entry.__type__ === UI_CONTROLLER_GEAR_FONT_SIZE_UUID
+      || entry.__type__ === UI_CONTROLLER_GEAR_IMAGE_UUID
     ) {
       if (entry.controllerName === originalName || entry._N$controllerName === originalName) {
         if (Object.prototype.hasOwnProperty.call(entry, 'controllerName')) {
@@ -4950,6 +5411,11 @@ function persistControllersToSelection(payload) {
           var fontSizeGear = current.getComponent && current.getComponent('UIControllerGearFontSize');
           if (fontSizeGear && fontSizeGear.controllerName === originalName) {
             fontSizeGear.controllerName = nextName;
+          }
+
+          var imageGear = current.getComponent && current.getComponent('UIControllerGearImage');
+          if (imageGear && imageGear.controllerName === originalName) {
+            imageGear.controllerName = nextName;
           }
 
           if (current.children && current.children.length) {

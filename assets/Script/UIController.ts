@@ -426,6 +426,7 @@ export default class UIController extends cc.Component {
         this._applyGears('UIControllerGearPosition');
         this._applyGears('UIControllerGearSize');
         this._applyGears('UIControllerGearFontSize');
+        this._applyGears('UIControllerGearImage');
     }
 
     applyAll() {
@@ -443,6 +444,7 @@ export default class UIController extends cc.Component {
         this._applyGears('UIControllerGearPosition');
         this._applyGears('UIControllerGearSize');
         this._applyGears('UIControllerGearFontSize');
+        this._applyGears('UIControllerGearImage');
     }
 
     updateControllers(controllers: UIControllerItem[], keepPreview?: boolean) {
