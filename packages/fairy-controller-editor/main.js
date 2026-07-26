@@ -2912,6 +2912,8 @@ const INJECT_SCRIPT = `
     menu.style.zIndex = '999999';
     menu.style.padding = '6px 0';
     menu.style.boxSizing = 'border-box';
+    menu.style.maxHeight = 'calc(100vh - 16px)';
+    menu.style.overflowY = 'auto';
 
     var items = [
       { label: '显示-2', type: 'display' },
@@ -2963,8 +2965,29 @@ const INJECT_SCRIPT = `
 
     document.body.appendChild(menu);
     var rect = anchorButton.getBoundingClientRect();
-    menu.style.left = Math.round(rect.left) + 'px';
-    menu.style.top = Math.round(rect.bottom + 4) + 'px';
+    var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    var menuRect = menu.getBoundingClientRect();
+    var left = Math.round(rect.left);
+    var top = Math.round(rect.bottom + 4);
+    var margin = 8;
+
+    if (left + menuRect.width + margin > viewportWidth) {
+      left = Math.max(margin, Math.round(viewportWidth - menuRect.width - margin));
+    }
+
+    if (top + menuRect.height + margin > viewportHeight) {
+      var aboveTop = Math.round(rect.top - menuRect.height - 4);
+      if (aboveTop >= margin) {
+        top = aboveTop;
+      }
+      else {
+        top = Math.max(margin, Math.round(viewportHeight - menuRect.height - margin));
+      }
+    }
+
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
 
     var closeHandler = function (event) {
       if (!menu.contains(event.target) && event.target !== anchorButton) {
