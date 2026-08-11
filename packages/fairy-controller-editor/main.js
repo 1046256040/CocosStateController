@@ -3774,7 +3774,7 @@ const INJECT_SCRIPT = `
       button.style.background = 'transparent';
       button.style.color = '#d3d3d3';
       button.style.border = '0';
-      button.style.padding = '0';
+      button.style.padding = text === 'X' ? '0 6px' : '0';
       button.style.cursor = 'pointer';
       button.style.fontSize = '12px';
       return button;

@@ -107,6 +107,9 @@
       },
       {
         "__id__": 56
+      },
+      {
+        "__id__": 57
       }
     ],
     "_prefab": null,
@@ -1838,11 +1841,25 @@
       "__id__": 2
     },
     "_enabled": true,
-    "controllersJson": "[\n  {\n    \"name\": \"c1\",\n    \"remark\": \"\",\n    \"pages\": [\n      {\n        \"id\": \"page-0\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-1\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-2\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      }\n    ],\n    \"selectedIndex\": 0\n  },\n  {\n    \"name\": \"c2\",\n    \"remark\": \"\",\n    \"pages\": [\n      {\n        \"id\": \"page-0\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-1\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      }\n    ],\n    \"selectedIndex\": 0\n  }\n]",
+    "controllersJson": "[\n  {\n    \"name\": \"c1\",\n    \"remark\": \"领取状态\",\n    \"pages\": [\n      {\n        \"id\": \"page-0\",\n        \"name\": \"未达成\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-1\",\n        \"name\": \"未领取\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-2\",\n        \"name\": \"已领取\",\n        \"remark\": \"\"\n      }\n    ],\n    \"selectedIndex\": 0\n  },\n  {\n    \"name\": \"c2\",\n    \"remark\": \"\",\n    \"pages\": [\n      {\n        \"id\": \"page-0\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-1\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      }\n    ],\n    \"selectedIndex\": 0\n  }\n]",
     "bindingsJson": "[\n  {\n    \"id\": \"binding-1783842363359\",\n    \"nodePath\": \"New Node\",\n    \"nodeUuid\": \"acpI0Cr+tAa4D1+u94yF9i\",\n    \"controllerName\": \"controller\",\n    \"type\": \"display\",\n    \"values\": {\n      \"visiblePages\": [\n        0\n      ],\n      \"conditions\": [\n        {\n          \"controllerName\": \"controller\",\n          \"visiblePages\": [\n            0\n          ]\n        }\n      ],\n      \"mode\": \"or\"\n    }\n  }\n]",
     "previewController": "c1",
     "previewPage": "page-0",
     "previewInEditor": true,
     "_id": "a1DXi0aUBBVIxvnxWjpB2P"
+  },
+  {
+    "__type__": "ecP2tgT5VOP4xP9ncKgn1q",
+    "_name": "",
+    "_objFlags": 0,
+    "node": {
+      "__id__": 2
+    },
+    "_enabled": true,
+    "controllersJson": "[\n  {\n    \"name\": \"c1\",\n    \"remark\": \"领取状态\",\n    \"selectedIndex\": 0,\n    \"pages\": [\n      {\n        \"id\": \"page-0\",\n        \"name\": \"未达成\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-1\",\n        \"name\": \"未领取\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-2\",\n        \"name\": \"已领取\",\n        \"remark\": \"\"\n      }\n    ]\n  },\n  {\n    \"name\": \"c2\",\n    \"remark\": \"\",\n    \"pages\": [\n      {\n        \"id\": \"page-0\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      },\n      {\n        \"id\": \"page-1\",\n        \"name\": \"\",\n        \"remark\": \"\"\n      }\n    ],\n    \"selectedIndex\": 0\n  }\n]",
+    "bindingsJson": "[]",
+    "previewController": "c1",
+    "previewPage": "page-0",
+    "_id": ""
   }
 ]
